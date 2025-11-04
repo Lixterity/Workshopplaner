@@ -1,25 +1,13 @@
 <script setup>
-import { useQuasar } from 'quasar';
+import { useQuasar } from 'quasar'
 
-const $q = useQuasar();
+const $q = useQuasar()
 
 const highlights = [
-  {
-    id: 1,
-    title: 'Workshops im Blick',
-    copy: 'Verwalte Termine, Räume und Teilnehmer übersichtlich an einem Ort.',
-  },
-  {
-    id: 2,
-    title: 'Schnell startklar',
-    copy: 'Starte mit wenigen Klicks in deine nächste Session – ohne Setup-Aufwand.',
-  },
-  {
-    id: 3,
-    title: 'Zusammen arbeiten',
-    copy: 'Teile Pläne mit deinem Team und bleibe immer synchron.',
-  },
-];
+  { id: 1, title: 'Workshops im Blick', copy: 'Verwalte Termine, Räume und Teilnehmer übersichtlich an einem Ort.' },
+  { id: 2, title: 'Schnell startklar', copy: 'Starte mit wenigen Klicks in deine nächste Session – ohne Setup-Aufwand.' },
+  { id: 3, title: 'Zusammen arbeiten', copy: 'Teile Pläne mit deinem Team und bleibe immer synchron.' }
+]
 </script>
 
 <template>
@@ -27,17 +15,14 @@ const highlights = [
     class="flex flex-center"
     :class="['home-page q-pa-xl', $q.dark.isActive ? 'home-page--dark' : 'home-page--light']"
   >
-    <div class="home-content q-gutter-xl">
+    <div class="home-content">
       <q-card
         class="hero-card q-pa-xl column items-center text-center"
         :class="$q.dark.isActive ? 'hero-card--dark text-white' : 'hero-card--light'"
       >
-        <q-icon name="event_note" size="48px" color="primary" />
+        <img src="/WP_Icon.png" alt="Workshopplaner Logo" class="hero-logo" />
         <div class="text-h4 text-weight-bold q-mt-md">Workshopplaner</div>
-        <div
-          class="text-body1 q-mt-sm"
-          :class="$q.dark.isActive ? 'text-grey-3' : 'text-grey-7'"
-        >
+        <div class="text-body1 q-mt-sm" :class="$q.dark.isActive ? 'text-grey-3' : 'text-grey-7'">
           Plane Workshops ohne Stress – alles im Überblick, bestens organisiert.
         </div>
 
@@ -51,10 +36,7 @@ const highlights = [
           to="/login"
         />
 
-        <div
-          class="text-caption q-mt-md"
-          :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-        >
+        <div class="text-caption q-mt-md" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
           Noch kein Konto?
           <router-link to="/register" class="text-primary text-weight-medium">
             Konto erstellen
@@ -62,26 +44,20 @@ const highlights = [
         </div>
       </q-card>
 
-      <div class="highlights row q-col-gutter-xl">
+      <div class="highlights">
         <q-card
           v-for="item in highlights"
           :key="item.id"
           flat
           bordered
-          class="highlight-card col-12 col-md-4"
+          class="highlight-card"
           :class="$q.dark.isActive ? 'highlight-card--dark text-white' : 'highlight-card--light'"
         >
           <div class="q-pa-lg">
-            <div
-              class="text-subtitle1 text-weight-medium"
-              :class="$q.dark.isActive ? 'text-blue-3' : 'text-primary'"
-            >
+            <div class="text-subtitle1 text-weight-medium" :class="$q.dark.isActive ? 'text-blue-3' : 'text-primary'">
               {{ item.title }}
             </div>
-            <div
-              class="text-body2 q-mt-sm"
-              :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-            >
+            <div class="text-body2 q-mt-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
               {{ item.copy }}
             </div>
           </div>
@@ -97,55 +73,63 @@ const highlights = [
   min-height: calc(100vh - 98px);
   transition: background 0.3s ease;
 }
-
 .home-page--light {
   background: linear-gradient(145deg, #f5f7fa 0%, #ffffff 100%);
 }
-
 .home-page--dark {
   background: radial-gradient(circle at top, rgba(37, 99, 235, 0.2), rgba(15, 23, 42, 0.95));
 }
-
 .home-content {
   max-width: 900px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
-
 .hero-card {
   border-radius: 24px;
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
-
+.hero-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: contain;
+}
 .hero-card--light {
   background-color: #ffffff;
   box-shadow: 0 18px 45px rgba(25, 118, 210, 0.08);
 }
-
 .hero-card--dark {
   background: rgba(15, 23, 42, 0.9);
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(12px);
 }
-
 .highlight-card {
   border-radius: 20px;
   min-width: 0;
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
-
 .highlight-card--light {
   background-color: #ffffff;
   box-shadow: 0 10px 25px rgba(25, 118, 210, 0.06);
 }
-
 .highlight-card--dark {
   background: rgba(15, 23, 42, 0.85);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
 }
-
 .highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px;
   max-width: 900px;
   margin: 0 auto;
+  padding: 8px 8px 4px;
+}
+@media (min-width: 1024px) {
+  .home-content {
+    gap: 56px;
+  }
 }
 </style>

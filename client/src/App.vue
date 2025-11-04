@@ -1,15 +1,15 @@
 <script setup>
-import { computed } from 'vue';
-import { useQuasar } from 'quasar';
+import { computed } from 'vue'
+import { useQuasar } from 'quasar'
 
-const $q = useQuasar();
+const $q = useQuasar()
 
 const isDark = computed({
   get: () => $q.dark.isActive,
-  set: (val) => {
-    $q.dark.set(val);
-  },
-});
+  set: val => {
+    $q.dark.set(val)
+  }
+})
 </script>
 
 <template>
@@ -20,7 +20,7 @@ const isDark = computed({
       height-hint="98"
     >
       <q-toolbar>
-        <q-icon name="event" size="32px" class="q-mr-sm" />
+        <img src="/WP_Icon.png" alt="Workshopplaner Logo" class="brand-logo q-mr-sm" />
 
         <q-toolbar-title>
           Workshopplaner
@@ -33,9 +33,9 @@ const isDark = computed({
           round
           flat
           :icon="isDark ? 'dark_mode' : 'light_mode'"
-          @click="isDark = !isDark"
           class="text-white"
           :aria-label="isDark ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'"
+          @click="isDark = !isDark"
         >
           <q-tooltip anchor="top middle" self="bottom middle">
             {{ isDark ? 'Lichtmodus' : 'Dunkelmodus' }}
@@ -47,6 +47,7 @@ const isDark = computed({
         <q-route-tab to="/" label="Home" exact />
         <q-route-tab to="/login" label="Login" />
         <q-route-tab to="/register" label="Registrieren" />
+        <q-route-tab to="/events" label="Events" />
       </q-tabs>
     </q-header>
 
@@ -61,27 +62,28 @@ const isDark = computed({
   font-family: 'Montserrat';
   src: url('/fonts/Montserrat/Montserrat-Regular.ttf') format('truetype');
 }
-
 @font-face {
   font-family: 'Lora';
   src: url('/fonts/Lora/Lora-Regular.ttf') format('truetype');
 }
-
 @font-face {
   font-family: 'LibreBodoni';
   src: url('/fonts/LibreBodoni/LibreBodoni-Regular.ttf') format('truetype');
 }
-
 * {
   font-family: 'Montserrat';
 }
-
 body {
   background-color: #f5f7fa;
   transition: background-color 0.3s ease;
 }
-
 body.body--dark {
   background-color: #0f172a;
+}
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: contain;
 }
 </style>

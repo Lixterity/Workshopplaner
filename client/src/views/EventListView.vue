@@ -41,7 +41,7 @@ const openEvent = eventId => {
       <header class="page-header q-mb-lg">
         <div>
           <h1 class="text-h4 text-weight-bold q-mt-xs q-mb-none">Events</h1>
-          <p class="text-body2 text-grey-7 q-mt-sm">
+          <p class="text-body2 q-mt-sm" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
             Stöbere in kommenden Veranstaltungen und sichere dir einen Platz für alle Workshops oder einzelne Sessions.
           </p>
         </div>
@@ -71,17 +71,17 @@ const openEvent = eventId => {
             <div class="text-h6 text-weight-bold">
               {{ event.name }}
             </div>
-            <div class="text-body2 text-grey-6" :class="$q.dark.isActive ? 'text-grey-4' : ''">
+            <div class="text-body2" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-6'">
               {{ event.location }} · {{ event.totalWorkshops }} Workshops · {{ event.totalParticipants }} Teilnehmer*innen
             </div>
-            <div class="text-caption text-grey-6 q-mt-xs" :class="$q.dark.isActive ? 'text-grey-5' : ''">
+            <div class="text-caption q-mt-xs" :class="$q.dark.isActive ? 'text-grey-5' : 'text-grey-6'">
               Freie Plätze in Workshops: {{ event.freeSeats }}
             </div>
           </div>
 
           <q-separator spaced />
 
-          <div class="event-card__actions q-pa-sm q-gutter-sm">
+          <div class="event-card__actions">
             <q-btn
               color="primary"
               icon="list_alt"
@@ -89,14 +89,6 @@ const openEvent = eventId => {
               no-caps
               class="full-width"
               @click="openEvent(event.id)"
-            />
-            <q-btn
-              flat
-              color="primary"
-              icon="person_add_alt_1"
-              label="Für komplettes Event anmelden"
-              no-caps
-              class="full-width"
             />
           </div>
         </q-card>
@@ -137,6 +129,10 @@ const openEvent = eventId => {
 .event-card {
   border-radius: 20px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 280px;
 }
 .event-card--light {
   background-color: #ffffff;
@@ -152,15 +148,22 @@ const openEvent = eventId => {
 }
 .event-card__body {
   padding: 22px 24px 0;
+  /* grow to fill space so footer stays at bottom */
+  flex: 1 1 auto;
 }
 .event-card__actions {
   display: flex;
   flex-direction: column;
   padding: 16px 24px 24px;
 }
+/* make grid items stretch so cards fill rows consistently */
+.event-grid { align-items: stretch; }
 @media (max-width: 599px) {
   .header-action {
     width: 100%;
+  }
+  .event-card {
+    min-height: unset;
   }
 }
 </style>

@@ -26,8 +26,6 @@ const formatted = computed(() => {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
   })
 
   const startDate = new Date(workshop.value.date)
@@ -94,21 +92,11 @@ const goBack = () => {
 
         <div class="info-grid">
           <div class="info-item">
-            <q-icon name="group" color="primary" size="28px" />
-            <div>
-              <div class="label">Zielgruppe</div>
-              <div class="value">
-                {{ workshop.targetGroup }}
-              </div>
-            </div>
-          </div>
-
-          <div class="info-item">
             <q-icon name="event" color="primary" size="28px" />
             <div>
               <div class="label">Datum & Zeit</div>
               <div class="value">
-                {{ formatted.dateTime }} · {{ workshop.duration }}
+                {{ formatted.dateTime }} von {{ workshop.duration }}
               </div>
             </div>
           </div>
@@ -185,13 +173,6 @@ const goBack = () => {
             no-caps
             unelevated
             :disable="formatted.isFull"
-          />
-          <q-btn
-            flat
-            color="primary"
-            icon="checklist"
-            label="Für komplettes Event Anmelden"
-            no-caps
           />
         </div>
       </q-card>

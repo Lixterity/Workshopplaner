@@ -54,21 +54,29 @@ const rememberOptions = [
         <q-input label="E-Mail" type="email" outlined dense />
         <q-input label="Passwort" :type="showPassword ? 'text' : 'password'" outlined dense>
           <template #append>
-            <q-icon
-              :name="showPassword ? 'visibility_off' : 'visibility'"
-              class="cursor-pointer"
-              @click="showPassword = !showPassword"
-            />
+        <q-icon
+          :name="showPassword ? 'visibility_off' : 'visibility'"
+          class="cursor-pointer"
+          @click="showPassword = !showPassword"
+        />
           </template>
         </q-input>
+
+        <div class="row justify-end q-mt-xs q-mb-sm">
+          <router-link to="/forgot-password" class="text-caption text-primary text-weight-medium">
+            Passwort vergessen?
+          </router-link>
+        </div>
+
         <q-option-group
           v-model="rememberSelection"
           type="checkbox"
           dense
           :options="rememberOptions"
-          class="text-caption"
+          class="text-caption q-mt-xs q-mb-sm"
           :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
         />
+        
         <q-btn
           color="primary"
           label="Anmelden"

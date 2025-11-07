@@ -48,6 +48,7 @@ const isDark = computed({
         <q-route-tab to="/login" label="Login" />
         <q-route-tab to="/register" label="Registrieren" />
         <q-route-tab to="/events" label="Events" />
+        <q-route-tab to="/my-workshops" label="Meine Workshops" />
       </q-tabs>
     </q-header>
 

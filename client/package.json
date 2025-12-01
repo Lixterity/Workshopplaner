@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "type": "module",
   "authors": [
-    "Robert Baumgartner",
-    "Thomas Psik"
+    "Lukas Iveljic",
+    "Matteo Knogler",
+    "Sayed Sadat"
   ],
   "scripts": {
     "dev": "vite",
@@ -13,6 +14,8 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.17.0",
+    "axios": "^1.13.2",
+    "pinia": "^3.0.4",
     "quasar": "^2.18.2",
     "vue": "^3.5.21",
     "vue-router": "^4.5.1"

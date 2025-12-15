@@ -1,11 +1,18 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useDbStore } from '../stores/dbStore'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { events } from '../data/events'
 
 const router = useRouter()
 const $q = useQuasar()
+const dbStore = useDbStore()
+
+onMounted(() => {
+  dbStore.fetchEvents();
+  dbStore.fetchWorkshops();
+})
 
 const dateFormatter = new Intl.DateTimeFormat('de-DE', {
   weekday: 'long',
@@ -37,6 +44,7 @@ const openEvent = eventId => {
 
 <template>
   <q-page class="event-page q-pa-lg" :class="$q.dark.isActive ? 'bg-dark-page' : 'bg-light-page'">
+
     <div class="event-wrapper">
       <header class="page-header q-mb-lg">
         <div>
@@ -45,51 +53,34 @@ const openEvent = eventId => {
             Stöbere in kommenden Veranstaltungen und sichere dir einen Platz für alle Workshops oder einzelne Sessions.
           </p>
         </div>
-        <q-btn
-          color="primary"
-          icon="event_available"
-          label="Neues Event erstellen"
-          no-caps
-          unelevated
-          class="header-action"
-        />
+        <q-btn color="primary" icon="event_available" label="Neues Event erstellen" no-caps unelevated
+          class="header-action" />
       </header>
 
       <div class="event-grid">
-        <q-card
-          v-for="event in listedEvents"
-          :key="event.id"
-          flat
-          bordered
-          class="event-card"
-          :class="$q.dark.isActive ? 'event-card--dark text-white' : 'event-card--light'"
-        >
+        <q-card v-for="event in dbStore.workshops" :key="event.id" flat bordered class="event-card"
+          :class="$q.dark.isActive ? 'event-card--dark text-white' : 'event-card--light'">
           <div class="event-card__body q-gutter-sm">
             <div class="text-caption text-uppercase text-weight-medium text-primary">
-              {{ event.formattedDate }}
+              {{ dateFormatter.format(new Date(event.anfang_datum_zeit)) }}
             </div>
             <div class="text-h6 text-weight-bold">
-              {{ event.name }}
+              {{ event.titel }}
             </div>
             <div class="text-body2" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-6'">
-              {{ event.location }} · {{ event.totalWorkshops }} Workshops · {{ event.totalParticipants }} Teilnehmer*innen
+              {{ event.adresse }} · {{ dbStore.events }} Workshops · {{ event.kapazitaet }}
+              Teilnehmer*innen
             </div>
             <div class="text-caption q-mt-xs" :class="$q.dark.isActive ? 'text-grey-5' : 'text-grey-6'">
-              Freie Plätze in Workshops: {{ event.freeSeats }}
+              Freie Plätze in Workshops: {{ event.kapazitaet - event.aktuelle_teilnehmer }}
             </div>
           </div>
 
           <q-separator spaced />
 
           <div class="event-card__actions">
-            <q-btn
-              color="primary"
-              icon="list_alt"
-              label="Workshops ansehen"
-              no-caps
-              class="full-width"
-              @click="openEvent(event.id)"
-            />
+            <q-btn color="primary" icon="list_alt" label="Workshops ansehen" no-caps class="full-width"
+              @click="openEvent(event.id)" />
           </div>
         </q-card>
       </div>
@@ -102,30 +93,37 @@ const openEvent = eventId => {
   min-height: calc(100vh - 98px);
   transition: background 0.3s ease;
 }
+
 .bg-light-page {
   background: linear-gradient(180deg, #f5f7fa 0%, #ffffff 100%);
 }
+
 .bg-dark-page {
   background: radial-gradient(circle at top, rgba(37, 99, 235, 0.2), rgba(11, 20, 33, 0.96));
 }
+
 .event-wrapper {
   max-width: 960px;
   margin: 0 auto;
   width: 100%;
 }
+
 .page-header {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
 .header-action {
   align-self: flex-start;
 }
+
 .event-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
 }
+
 .event-card {
   border-radius: 20px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -134,34 +132,44 @@ const openEvent = eventId => {
   justify-content: space-between;
   min-height: 280px;
 }
+
 .event-card--light {
   background-color: #ffffff;
   box-shadow: 0 18px 40px rgba(25, 118, 210, 0.08);
 }
+
 .event-card--dark {
   background: rgba(15, 23, 42, 0.88);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
 }
+
 .event-card:hover {
   transform: translateY(-3px);
 }
+
 .event-card__body {
   padding: 22px 24px 0;
   /* grow to fill space so footer stays at bottom */
   flex: 1 1 auto;
 }
+
 .event-card__actions {
   display: flex;
   flex-direction: column;
   padding: 16px 24px 24px;
 }
+
 /* make grid items stretch so cards fill rows consistently */
-.event-grid { align-items: stretch; }
+.event-grid {
+  align-items: stretch;
+}
+
 @media (max-width: 599px) {
   .header-action {
     width: 100%;
   }
+
   .event-card {
     min-height: unset;
   }

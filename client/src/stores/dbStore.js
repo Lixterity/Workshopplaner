@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -8,7 +9,8 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const useDbStore = defineStore('dbStore', () => {
-  const user = ref({}); // Placeholder user
+  const router = useRouter();
+  const user = ref({});
   const events = ref([]);
   const workshops = ref([]);
 
@@ -21,7 +23,7 @@ export const useDbStore = defineStore('dbStore', () => {
       console.error('Error loggin in: ', error);
     } else {
       user.value = data.user;
-      console.log(user.value);
+      router.push('/events');
     }
     return { data, error };
   };
@@ -34,7 +36,10 @@ export const useDbStore = defineStore('dbStore', () => {
       console.error('Error logging in with Google: ', error);
       return;
     }
-    user.value = data.user;
+    if (user.value != {}) {
+      user.value = data.user;
+    }
+    await router.push('/events');
     return { data, error };
   };
 

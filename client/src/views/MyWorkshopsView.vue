@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, toRaw } from 'vue'
 import { useQuasar } from 'quasar'
 import { useDbStore } from '../stores/dbStore'
 
@@ -11,9 +11,8 @@ onMounted(() => {
   console.log(dbStore.user)
 })
 
-console.log(dbStore.workshops)
 
-const userName = dbStore.user.name
+const userName = toRaw(dbStore.user.email)
 const isDark = computed(() => $q.dark.isActive)
 
 const dayStartHour = 8

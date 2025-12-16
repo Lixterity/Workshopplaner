@@ -43,6 +43,24 @@ export const useDbStore = defineStore('dbStore', () => {
     return { data, error };
   };
 
+  const handleUserRegister = async (email, password, username) => {
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          first_name: username,
+        },
+      },
+    });
+    if (error) {
+      console.error('Error registering user: ', error);
+    } else {
+      user.value = data.user;
+      router.push('/events');
+    }
+  };
+
   const fetchEvents = async () => {
     const { data, error } = await supabase.from('event').select('*');
     if (error) {
@@ -68,5 +86,6 @@ export const useDbStore = defineStore('dbStore', () => {
     fetchWorkshops,
     handleLogin,
     handleGoogleLogin,
+    handleUserRegister,
   };
 });

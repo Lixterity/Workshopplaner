@@ -1,54 +1,63 @@
 <script setup>
-import { computed, onMounted, toRaw } from 'vue'
-import { useQuasar } from 'quasar'
-import { useDbStore } from '../stores/dbStore'
+import { computed, onMounted, toRaw } from 'vue';
+import { useQuasar } from 'quasar';
+import { useDbStore } from '../stores/dbStore';
 
-const $q = useQuasar()
-const dbStore = useDbStore()
+const $q = useQuasar();
+const dbStore = useDbStore();
 
 onMounted(() => {
   dbStore.fetchWorkshops();
-  console.log(dbStore.user)
-})
+  console.log(dbStore.user);
+});
 
+const userName = toRaw(dbStore.user.identities[0].identity_data.first_name);
+const isDark = computed(() => $q.dark.isActive);
 
-const userName = toRaw(dbStore.user.email)
-const isDark = computed(() => $q.dark.isActive)
-
-const dayStartHour = 8
-const dayEndHour = 17
-const totalMinutes = (dayEndHour - dayStartHour) * 60
+const dayStartHour = 8;
+const dayEndHour = 17;
+const totalMinutes = (dayEndHour - dayStartHour) * 60;
 
 const weekDays = [
   { id: '2025-06-23', short: 'Mo', fullDate: '23.6.', label: 'Montag, 23. Juni' },
   { id: '2025-06-24', short: 'Di', fullDate: '24.6.', label: 'Dienstag, 24. Juni' },
   { id: '2025-06-25', short: 'Mi', fullDate: '25.6.', label: 'Mittwoch, 25. Juni' },
-  { id: '2025-06-26', short: 'Do', fullDate: '26.6.', label: 'Donnerstag, 26. Juni' }
-]
+  { id: '2025-06-26', short: 'Do', fullDate: '26.6.', label: 'Donnerstag, 26. Juni' },
+];
 
-const timeLabels = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
+const timeLabels = [
+  '08:00',
+  '09:00',
+  '10:00',
+  '11:00',
+  '12:00',
+  '13:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
+];
 
+const parseTimeToMinutes = (time) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
 
-const parseTimeToMinutes = time => {
-  const [hours, minutes] = time.split(':').map(Number)
-  return hours * 60 + minutes
-}
+const workshopsForDay = (dayId) => dbStore.workshops.filter((workshop) => workshop.dayId === dayId);
 
-const workshopsForDay = dayId => dbStore.workshops.filter(workshop => workshop.dayId === dayId)
-
-const getEventStyle = workshop => {
-  const startMinutes = parseTimeToMinutes(workshop.start)
-  const endMinutes = parseTimeToMinutes(workshop.end)
-  const offset = startMinutes - dayStartHour * 60
-  const heightMinutes = endMinutes - startMinutes
+const getEventStyle = (workshop) => {
+  const startMinutes = parseTimeToMinutes(workshop.start);
+  const endMinutes = parseTimeToMinutes(workshop.end);
+  const offset = startMinutes - dayStartHour * 60;
+  const heightMinutes = endMinutes - startMinutes;
 
   return {
     top: `${(offset / totalMinutes) * 100}%`,
     height: `${Math.max((heightMinutes / totalMinutes) * 100, 15)}%`,
     background: `linear-gradient(180deg, ${workshop.color}, ${workshop.color}cc)`,
-    color: '#0f172a'
-  }
-}
+    color: '#0f172a',
+  };
+};
 </script>
 
 <template>
@@ -85,16 +94,23 @@ const getEventStyle = workshop => {
         <div class="columns-wrapper">
           <div v-for="day in weekDays" :key="day.id" class="calendar-column">
             <div class="grid-lines">
-              <span v-for="(label, index) in timeLabels" :key="`${day.id}-${label}`"
-                :class="['grid-line', { 'grid-line--bold': index === 0 }]" />
+              <span
+                v-for="(label, index) in timeLabels"
+                :key="`${day.id}-${label}`"
+                :class="['grid-line', { 'grid-line--bold': index === 0 }]"
+              />
             </div>
-            <div v-for="workshop in dbStore.workshops.filter(w => w.dayId === day.id)" :key="workshop.id"
-              class="calendar-event" :style="getEventStyle(workshop.titel)">
+            <div
+              v-for="workshop in dbStore.workshops.filter((w) => w.dayId === day.id)"
+              :key="workshop.id"
+              class="calendar-event"
+              :style="getEventStyle(workshop.titel)"
+            >
               <div class="text-body1 text-weight-bold">{{ workshop.titel }}</div>
-              <div class="text-caption text-weight-medium q-mt-xs">{{ workshop.anfang_datum_zeit }}-{{
-                workshop.ende_datum_zeit }} |
-                {{
-                  workshop.location }}</div>
+              <div class="text-caption text-weight-medium q-mt-xs">
+                {{ workshop.anfang_datum_zeit }}-{{ workshop.ende_datum_zeit }} |
+                {{ workshop.location }}
+              </div>
               <div class="text-caption text-grey-9 q-mt-xs">{{ workshop.beschreibung }}</div>
             </div>
           </div>

@@ -1,10 +1,17 @@
 <script setup>
-import { ref } from 'vue'
-import { useQuasar } from 'quasar'
+import { ref } from 'vue';
+import { useQuasar } from 'quasar';
+import { useDbStore } from '../stores/dbStore';
 
-const $q = useQuasar()
-const showPassword = ref(false)
-const showConfirm = ref(false)
+const $q = useQuasar();
+const dbStore = useDbStore();
+
+const showPassword = ref(false);
+const showConfirm = ref(false);
+const email = ref('');
+const password = ref('');
+const confirmedPassword = ref('');
+const username = ref('');
 </script>
 
 <template>
@@ -25,9 +32,15 @@ const showConfirm = ref(false)
       </div>
 
       <q-form class="column q-gutter-md">
-        <q-input label="Name" outlined dense />
-        <q-input label="E-Mail" type="email" outlined dense />
-        <q-input label="Passwort" :type="showPassword ? 'text' : 'password'" outlined dense>
+        <q-input v-model="username" label="Name" outlined dense />
+        <q-input v-model="email" label="E-Mail" type="email" outlined dense />
+        <q-input
+          v-model="password"
+          label="Passwort"
+          :type="showPassword ? 'text' : 'password'"
+          outlined
+          dense
+        >
           <template #append>
             <q-icon
               :name="showPassword ? 'visibility_off' : 'visibility'"
@@ -36,7 +49,13 @@ const showConfirm = ref(false)
             />
           </template>
         </q-input>
-        <q-input label="Passwort bestätigen" :type="showConfirm ? 'text' : 'password'" outlined dense>
+        <q-input
+          label="Passwort bestätigen"
+          v-model="confirmedPassword"
+          :type="showConfirm ? 'text' : 'password'"
+          outlined
+          dense
+        >
           <template #append>
             <q-icon
               :name="showConfirm ? 'visibility_off' : 'visibility'"
@@ -52,14 +71,17 @@ const showConfirm = ref(false)
           size="lg"
           no-caps
           unelevated
+          :disable="confirmedPassword != password"
+          @click="dbStore.handleUserRegister(email, password, username)"
         />
       </q-form>
 
-      <div class="text-caption q-mt-lg text-center" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
+      <div
+        class="text-caption q-mt-lg text-center"
+        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+      >
         Schon ein Konto?
-        <router-link to="/login" class="text-primary text-weight-medium">
-          Anmelden
-        </router-link>
+        <router-link to="/login" class="text-primary text-weight-medium"> Anmelden </router-link>
       </div>
     </q-card>
   </q-page>

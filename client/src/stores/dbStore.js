@@ -8,17 +8,34 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const useDbStore = defineStore('dbStore', () => {
-  const user = ref(supabase.auth.getUser()); // Placeholder user
+  const user = ref({}); // Placeholder user
   const events = ref([]);
   const workshops = ref([]);
 
   const handleLogin = async (email, password) => {
-    const { user, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
     if (error) {
       console.error('Error loggin in: ', error);
     } else {
-      user.value = user;
+      user.value = data.user;
+      console.log(user.value);
     }
+    return { data, error };
+  };
+
+  const handleGoogleLogin = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+    if (error) {
+      console.error('Error logging in with Google: ', error);
+      return;
+    }
+    user.value = data.user;
+    return { data, error };
   };
 
   const fetchEvents = async () => {
@@ -38,5 +55,13 @@ export const useDbStore = defineStore('dbStore', () => {
     workshops.value = data;
   };
 
-  return { user, events, workshops, fetchEvents, fetchWorkshops, handleLogin };
+  return {
+    user,
+    events,
+    workshops,
+    fetchEvents,
+    fetchWorkshops,
+    handleLogin,
+    handleGoogleLogin,
+  };
 });

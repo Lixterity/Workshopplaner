@@ -1,13 +1,16 @@
 <script setup>
-import { ref } from 'vue'
-import { useQuasar } from 'quasar'
+import { ref } from 'vue';
+import { useQuasar } from 'quasar';
+import { useDbStore } from '../stores/dbStore';
 
-const $q = useQuasar()
-const showPassword = ref(false)
-const rememberSelection = ref([])
-const rememberOptions = [
-  { label: 'Angemeldet bleiben', value: 'stay-signed-in' }
-]
+const $q = useQuasar();
+const dbStore = useDbStore();
+
+const showPassword = ref(false);
+const rememberSelection = ref([]);
+const email = ref('');
+const password = ref('');
+const rememberOptions = [{ label: 'Angemeldet bleiben', value: 'stay-signed-in' }];
 </script>
 
 <template>
@@ -36,13 +39,17 @@ const rememberOptions = [
         rounded
         unelevated
         no-caps
+        @click="dbStore.handleGoogleLogin()"
       />
 
       <div class="row items-center q-mb-md divider">
         <div class="col">
           <q-separator />
         </div>
-        <div class="col-auto text-caption q-px-md" :class="$q.dark.isActive ? 'text-grey-5' : 'text-grey-6'">
+        <div
+          class="col-auto text-caption q-px-md"
+          :class="$q.dark.isActive ? 'text-grey-5' : 'text-grey-6'"
+        >
           ODER
         </div>
         <div class="col">
@@ -51,14 +58,20 @@ const rememberOptions = [
       </div>
 
       <q-form class="column q-gutter-md">
-        <q-input label="E-Mail" type="email" outlined dense />
-        <q-input label="Passwort" :type="showPassword ? 'text' : 'password'" outlined dense>
+        <q-input label="E-Mail" type="email" outlined dense v-model="email" />
+        <q-input
+          label="Passwort"
+          :type="showPassword ? 'text' : 'password'"
+          outlined
+          dense
+          v-model="password"
+        >
           <template #append>
-        <q-icon
-          :name="showPassword ? 'visibility_off' : 'visibility'"
-          class="cursor-pointer"
-          @click="showPassword = !showPassword"
-        />
+            <q-icon
+              :name="showPassword ? 'visibility_off' : 'visibility'"
+              class="cursor-pointer"
+              @click="showPassword = !showPassword"
+            />
           </template>
         </q-input>
 
@@ -76,7 +89,7 @@ const rememberOptions = [
           class="text-caption q-mt-xs q-mb-sm"
           :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
         />
-        
+
         <q-btn
           color="primary"
           label="Anmelden"
@@ -84,10 +97,14 @@ const rememberOptions = [
           size="lg"
           class="q-mt-sm"
           no-caps
+          @click="dbStore.handleLogin(email, password)"
         />
       </q-form>
 
-      <div class="text-caption q-mt-lg text-center" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
+      <div
+        class="text-caption q-mt-lg text-center"
+        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
+      >
         Noch kein Konto?
         <router-link to="/register" class="text-primary text-weight-medium">
           Konto erstellen

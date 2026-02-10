@@ -1,119 +1,137 @@
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
+
 import { useDbStore } from '../stores/dbStore';
+import { getAuthErrorMessage } from '../utils/errorMessages';
 
-const $q = useQuasar();
 const dbStore = useDbStore();
+const $q = useQuasar();
+const router = useRouter();
 
-const showPassword = ref(false);
-const showConfirm = ref(false);
+const vorname = ref('');
+const nachname = ref('');
 const email = ref('');
 const password = ref('');
-const confirmedPassword = ref('');
-const username = ref('');
+const passwortBestaetigung = ref('');
+const showPassword = ref(false);
+const showPasswordConfirm = ref(false);
+const loading = ref(false);
+
+async function register() {
+  if (!vorname.value || !nachname.value || !email.value || !password.value || !passwortBestaetigung.value) {
+    $q.notify({ type: 'negative', message: 'Bitte alle Felder ausfüllen.' });
+    return;
+  }
+
+  if (password.value.length < 8) {
+    $q.notify({ type: 'negative', message: 'Das Passwort muss mindestens 8 Zeichen lang sein.' });
+    return;
+  }
+
+  if (password.value !== passwortBestaetigung.value) {
+    $q.notify({ type: 'negative', message: 'Die Passwörter stimmen nicht überein.' });
+    return;
+  }
+
+  loading.value = true;
+  const fullName = `${vorname.value} ${nachname.value}`.trim();
+  const { error } = await dbStore.handleUserRegister(
+    email.value,
+    password.value,
+    fullName,
+    dbStore.ROLLEN.TEILNEHMER,
+  );
+  loading.value = false;
+
+  if (error) {
+    $q.notify({ type: 'negative', message: getAuthErrorMessage(error, 'Registrierung fehlgeschlagen. Bitte prüfe deine Angaben.') });
+    return;
+  }
+
+  await router.push(dbStore.routeNachRolle());
+}
 </script>
 
 <template>
-  <q-page
-    class="flex flex-center"
-    :class="['auth-shell', $q.dark.isActive ? 'auth-shell--dark' : 'auth-shell--light']"
-  >
-    <q-card
-      class="auth-card column"
-      :class="$q.dark.isActive ? 'auth-card--dark text-white' : 'auth-card--light'"
-    >
-      <div class="column items-center text-center q-gutter-xs q-mb-xl">
-        <q-icon name="event_available" size="40px" color="primary" />
-        <div class="text-h5 text-weight-bold">Konto erstellen</div>
-        <div class="text-body2" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-6'">
-          Starte in wenigen Minuten mit deinem Workshopplaner
+  <q-page class="page-shell flex flex-center">
+    <q-card class="glass-card auth-card q-pa-xl">
+      <div class="text-center q-mb-md">
+        <div class="text-h5 text-weight-bold">Registrieren</div>
+        <div class="page-subtitle">Erstelle ein Konto für den Workshopplaner.</div>
+      </div>
+
+      <q-form class="q-mt-lg auth-form auth-form-fields" @submit.prevent="register">
+        <div class="name-grid">
+          <div>
+            <q-input v-model="vorname" outlined dense label="Vorname" />
+          </div>
+          <div>
+            <q-input v-model="nachname" outlined dense label="Nachname" />
+          </div>
         </div>
-      </div>
 
-      <q-form class="column q-gutter-md">
-        <q-input v-model="username" label="Name" outlined dense />
-        <q-input v-model="email" label="E-Mail" type="email" outlined dense />
-        <q-input
-          v-model="password"
-          label="Passwort"
-          :type="showPassword ? 'text' : 'password'"
-          outlined
-          dense
-        >
+        <q-input v-model="email" type="email" outlined dense label="E-Mail" />
+
+        <q-input v-model="password" outlined dense :type="showPassword ? 'text' : 'password'" label="Passwort">
           <template #append>
-            <q-icon
-              :name="showPassword ? 'visibility_off' : 'visibility'"
-              class="cursor-pointer"
-              @click="showPassword = !showPassword"
-            />
+            <q-icon :name="showPassword ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="showPassword = !showPassword" />
           </template>
         </q-input>
+
         <q-input
+          v-model="passwortBestaetigung"
+          outlined
+          dense
+          :type="showPasswordConfirm ? 'text' : 'password'"
           label="Passwort bestätigen"
-          v-model="confirmedPassword"
-          :type="showConfirm ? 'text' : 'password'"
-          outlined
-          dense
         >
           <template #append>
             <q-icon
-              :name="showConfirm ? 'visibility_off' : 'visibility'"
+              :name="showPasswordConfirm ? 'visibility_off' : 'visibility'"
               class="cursor-pointer"
-              @click="showConfirm = !showConfirm"
+              @click="showPasswordConfirm = !showPasswordConfirm"
             />
           </template>
         </q-input>
-        <q-btn
-          color="primary"
-          label="Konto erstellen"
-          class="q-mt-sm"
-          size="lg"
-          no-caps
-          unelevated
-          :disable="confirmedPassword != password"
-          @click="dbStore.handleUserRegister(email, password, username)"
-        />
-      </q-form>
 
-      <div
-        class="text-caption q-mt-lg text-center"
-        :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'"
-      >
-        Schon ein Konto?
-        <router-link to="/login" class="text-primary text-weight-medium"> Anmelden </router-link>
-      </div>
+        <div class="row items-center justify-between">
+          <router-link to="/anmelden" class="text-primary text-caption">Schon ein Konto?</router-link>
+        </div>
+
+        <q-btn type="submit" color="primary" :loading="loading" label="Konto erstellen" no-caps unelevated class="full-width" />
+      </q-form>
     </q-card>
   </q-page>
 </template>
 
 <style scoped>
-.auth-shell {
-  width: 100%;
-  min-height: calc(100vh - 98px);
-  padding: 48px 16px;
-  transition: background 0.3s ease;
-}
-.auth-shell--light {
-  background: linear-gradient(145deg, #f5f7fa 0%, #ffffff 100%);
-}
-.auth-shell--dark {
-  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.15), rgba(11, 20, 33, 0.92));
-}
 .auth-card {
-  width: 100%;
-  max-width: 420px;
-  border-radius: 24px;
-  padding: 40px;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  width: min(540px, 95vw);
+  margin: 0 auto;
 }
-.auth-card--light {
-  background-color: #ffffff;
-  box-shadow: 0 24px 50px rgba(25, 118, 210, 0.12);
+
+.auth-form {
+  width: min(440px, 100%);
+  margin: 0 auto;
 }
-.auth-card--dark {
-  background: rgba(15, 23, 42, 0.92);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(12px);
+
+.auth-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.name-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .name-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

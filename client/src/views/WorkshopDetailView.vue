@@ -1,297 +1,293 @@
-<script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
-import { findWorkshop } from '../data/events'
+﻿<script setup>
+import { computed, onMounted, ref } from 'vue';
+import { useQuasar } from 'quasar';
+
+import { useDbStore } from '../stores/dbStore';
 
 const props = defineProps({
-  eventId: { type: String, required: true },
-  workshopId: { type: String, required: true }
-})
+  workshopId: {
+    type: [String, Number],
+    required: true,
+  },
+});
 
-const router = useRouter()
-const $q = useQuasar()
+const dbStore = useDbStore();
+const $q = useQuasar();
 
-const details = computed(() => findWorkshop(props.eventId, props.workshopId))
-const workshop = computed(() => details.value.workshop)
-const event = computed(() => details.value.event)
+const qrDialog = ref(false);
+const editDialog = ref(false);
+const saveLoading = ref(false);
 
-const formatted = computed(() => {
-  if (!workshop.value) {
-    return null
-  }
+const workshop = computed(() => dbStore.getWorkshopById(Number(props.workshopId)));
+const event = computed(() => dbStore.getEventById(workshop.value?.event_id));
+const anmeldungen = computed(() => dbStore.getWorkshopAnmeldungen(Number(props.workshopId)));
 
-  const datetimeFormatter = new Intl.DateTimeFormat('de-DE', {
+const editForm = ref({
+  titel: '',
+  beschreibung: '',
+  kapazitaet: 0,
+  raum: '',
+  adresse: '',
+  kosten: 0,
+  anfang_datum_zeit: '',
+  ende_datum_zeit: '',
+  public: true,
+  event_id: null,
+});
+
+const istRegistriert = computed(() => dbStore.isRegisteredForWorkshop(Number(props.workshopId)));
+const belegung = computed(() => dbStore.workshopBelegung(Number(props.workshopId)));
+const freiePlaetze = computed(() => {
+  if (!workshop.value?.kapazitaet && workshop.value?.kapazitaet !== 0) return null;
+  return workshop.value.kapazitaet - belegung.value;
+});
+
+const darfBearbeiten = computed(() => {
+  if (!workshop.value) return false;
+  return dbStore.canEditWorkshop(workshop.value);
+});
+
+const qrImageUrl = computed(() => dbStore.qrCodeUrl(`/workshops/${props.workshopId}`));
+
+function formatDate(dateValue) {
+  if (!dateValue) return 'Nicht gesetzt';
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return 'Nicht gesetzt';
+
+  return new Intl.DateTimeFormat('de-AT', {
     weekday: 'long',
-    day: 'numeric',
-    month: 'long',
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
-  })
-
-  const startDate = new Date(workshop.value.date)
-  const spotsLeft = workshop.value.capacity - workshop.value.participants.length
-
-  return {
-    dateTime: datetimeFormatter.format(startDate),
-    spotsLeft,
-    isFull: spotsLeft <= 0,
-    occupancyLabel: `${workshop.value.participants.length}/${workshop.value.capacity}`
-  }
-})
-
-const goBack = () => {
-  router.push({ name: 'event-workshops', params: { eventId: props.eventId } })
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
+
+function openEdit() {
+  if (!workshop.value) return;
+  editForm.value = {
+    titel: workshop.value.titel,
+    beschreibung: workshop.value.beschreibung,
+    kapazitaet: workshop.value.kapazitaet,
+    raum: workshop.value.raum,
+    adresse: workshop.value.adresse,
+    kosten: workshop.value.kosten,
+    anfang_datum_zeit: workshop.value.anfang_datum_zeit,
+    ende_datum_zeit: workshop.value.ende_datum_zeit,
+    public: workshop.value.public,
+    event_id: workshop.value.event_id,
+  };
+  editDialog.value = true;
+}
+
+async function saveEdit() {
+  if (!workshop.value) return;
+  saveLoading.value = true;
+  const { error } = await dbStore.updateWorkshop(workshop.value.id, editForm.value);
+  saveLoading.value = false;
+
+  if (error) {
+    $q.notify({ type: 'negative', message: `Speichern fehlgeschlagen: ${error.message}` });
+    return;
+  }
+
+  editDialog.value = false;
+  $q.notify({ type: 'positive', message: 'Workshop aktualisiert.' });
+}
+
+async function toggleAnmeldung() {
+  if (!workshop.value) return;
+
+  const result = istRegistriert.value
+    ? await dbStore.workshopAbmelden(workshop.value.id)
+    : await dbStore.workshopAnmelden(workshop.value.id);
+
+  if (result.error) {
+    $q.notify({ type: 'negative', message: result.error.message });
+    return;
+  }
+
+  $q.notify({ type: 'positive', message: istRegistriert.value ? 'Abmeldung erfolgreich.' : 'Anmeldung erfolgreich.' });
+}
+
+onMounted(async () => {
+  await dbStore.refreshAll();
+});
 </script>
 
 <template>
-  <q-page class="detail-page q-pa-lg" :class="$q.dark.isActive ? 'bg-dark-page' : 'bg-light-page'">
-    <div class="detail-wrapper">
-      <q-btn
-        flat
-        color="primary"
-        icon="arrow_back"
-        label="Zur Workshopliste"
-        no-caps
-        class="q-mb-lg"
-        @click="goBack"
-      />
-
-      <q-card
-        v-if="workshop && formatted"
-        flat
-        bordered
-        class="detail-card"
-        :class="$q.dark.isActive ? 'detail-card--dark text-white' : 'detail-card--light'"
-      >
-        <div class="card-header">
-          <div class="card-title row items-center justify-between">
-            <div>
-              <div class="eyebrow text-primary text-weight-medium">
-                {{ event?.name ?? 'Event' }}
-              </div>
-              <h1 class="text-h5 text-weight-bold q-mb-none">
-                {{ workshop.name }}
-              </h1>
-            </div>
-            <q-chip
-              :color="formatted.isFull ? 'negative' : 'positive'"
-              text-color="white"
-              icon="people_alt"
-              size="md"
-              :label="formatted.isFull ? 'Ausgebucht' : 'Plätze frei'"
-            />
-          </div>
-
-          <p class="text-body2 q-mt-md" :class="$q.dark.isActive ? 'text-grey-4' : 'text-grey-7'">
-            {{ workshop.description }}
-          </p>
+  <q-page class="page-shell">
+    <div class="content-max" v-if="workshop">
+      <div class="row items-start justify-between q-col-gutter-md q-mb-md">
+        <div class="col-12 col-md-8">
+          <div class="text-caption text-primary text-weight-bold">{{ event?.name || 'Event' }}</div>
+          <h1 class="page-title">{{ workshop.titel }}</h1>
+          <p class="page-subtitle">{{ workshop.beschreibung || 'Keine Beschreibung vorhanden.' }}</p>
         </div>
-
-        <q-separator spaced />
-
-        <div class="info-grid">
-          <div class="info-item">
-            <q-icon name="event" color="primary" size="28px" />
-            <div>
-              <div class="label">Datum & Zeit</div>
-              <div class="value">
-                {{ formatted.dateTime }} von {{ workshop.duration }}
-              </div>
-            </div>
-          </div>
-
-          <div class="info-item">
-            <q-icon name="meeting_room" color="primary" size="28px" />
-            <div>
-              <div class="label">Ort</div>
-              <div class="value">
-                {{ workshop.room }}
-              </div>
-            </div>
-          </div>
-
-          <div class="info-item">
-            <q-icon name="savings" color="primary" size="28px" />
-            <div>
-              <div class="label">Kosten</div>
-              <div class="value">
-                {{ workshop.cost }}
-              </div>
-            </div>
-          </div>
-
-          <div class="info-item">
-            <q-icon name="how_to_reg" color="primary" size="28px" />
-            <div>
-              <div class="label">Kapazität</div>
-              <div class="value">
-                {{ formatted.occupancyLabel }} Plätze
-              </div>
-            </div>
-          </div>
+        <div class="col-12 col-md-auto row q-gutter-sm items-center">
+          <q-btn color="primary" icon="qr_code_2" label="Workshop QR" no-caps unelevated @click="qrDialog = true" />
+          <q-btn v-if="darfBearbeiten" color="primary" icon="edit" label="Bearbeiten" no-caps unelevated @click="openEdit" />
         </div>
+      </div>
 
-        <q-separator spaced />
+      <div class="detail-grid">
+        <q-card class="glass-card q-pa-md">
+          <div class="text-subtitle1 text-weight-bold q-mb-sm">Infos</div>
+          <q-list dense>
+            <q-item>
+              <q-item-section avatar><q-icon name="schedule" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>{{ formatDate(workshop.anfang_datum_zeit) }}</q-item-label>
+                <q-item-label caption>Beginn</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="event_busy" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>{{ formatDate(workshop.ende_datum_zeit) }}</q-item-label>
+                <q-item-label caption>Ende</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="meeting_room" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>{{ workshop.raum || 'Raum offen' }}</q-item-label>
+                <q-item-label caption>{{ workshop.adresse || 'Adresse offen' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="payments" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>{{ workshop.kosten ?? 0 }} EUR</q-item-label>
+                <q-item-label caption>Kosten</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
 
-        <section class="section-block">
-          <h2 class="text-subtitle1 text-weight-medium q-mb-sm">Organisator*innen</h2>
-          <div class="chip-group">
-            <q-chip
-              v-for="host in workshop.hosts"
-              :key="host"
-              color="primary"
-              outline
-              icon="person"
-              :label="host"
-            />
+        <q-card class="glass-card q-pa-md">
+          <div class="row items-center justify-between q-mb-sm">
+            <div class="text-subtitle1 text-weight-bold">Anmeldungen</div>
+            <q-chip dense outline color="primary">{{ belegung }} / {{ workshop.kapazitaet ?? '-' }}</q-chip>
           </div>
-        </section>
+          <q-banner v-if="freiePlaetze !== null" class="q-mb-md" :class="freiePlaetze > 0 ? 'state-box status-ok' : 'state-box status-full'">
+            {{ freiePlaetze > 0 ? `${freiePlaetze} freie Plätze` : 'Keine freien Plätze mehr' }}
+          </q-banner>
 
-        <section class="section-block">
-          <div class="participants-header row items-center justify-between q-mb-sm">
-            <h2 class="text-subtitle1 text-weight-medium q-mb-none">
-              Teilnehmer*innen
-            </h2>
-            <q-chip dense color="primary" text-color="white" icon="groups" :label="formatted.occupancyLabel" />
-          </div>
-          <ul class="participant-list">
-            <li v-for="participant in workshop.participants" :key="participant">
-              <q-icon name="fiber_manual_record" size="8px" color="primary" class="q-mr-sm" />
-              <span>{{ participant }}</span>
-            </li>
-          </ul>
-        </section>
-
-        <q-separator spaced />
-
-        <div class="action-bar column q-gutter-sm">
           <q-btn
-            color="primary"
-            icon="event_available"
-            label="Für Workshop Anmelden"
+            :color="istRegistriert ? 'negative' : 'primary'"
+            :icon="istRegistriert ? 'event_busy' : 'event_available'"
+            :label="istRegistriert ? 'Abmelden' : 'Anmelden'"
             no-caps
             unelevated
-            :disable="formatted.isFull"
+            class="full-width q-mb-md"
+            @click="toggleAnmeldung"
           />
-        </div>
-      </q-card>
 
-      <q-banner
-        v-else
-        class="q-mt-lg"
-        rounded
-        :class="$q.dark.isActive ? 'bg-grey-9 text-white' : 'bg-grey-2'"
-      >
-        <template #avatar>
-          <q-icon name="help_outline" color="primary" />
-        </template>
-        Dieser Workshop konnte nicht gefunden werden. Bitte kehre zur Eventübersicht zurück.
-      </q-banner>
+          <q-separator class="q-my-sm" />
+
+          <div class="text-subtitle2 text-weight-bold q-mb-sm">Teilnehmer</div>
+          <q-list dense bordered class="rounded-borders" v-if="anmeldungen.length">
+            <q-item v-for="person in anmeldungen" :key="person.id">
+              <q-item-section avatar>
+                <q-avatar color="primary" text-color="white">{{ (person.vorname || '?')[0] }}</q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ person.vorname }} {{ person.nachname }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+          <q-banner v-else class="state-box">Noch keine Anmeldungen.</q-banner>
+        </q-card>
+      </div>
     </div>
+
+    <div v-else class="content-max">
+      <q-banner class="glass-card q-pa-md">Workshop nicht gefunden.</q-banner>
+    </div>
+
+    <q-dialog v-model="qrDialog">
+      <q-card class="glass-card" style="width: min(360px, 90vw)">
+        <q-card-section>
+          <div class="text-h6">Workshop QR</div>
+        </q-card-section>
+        <q-card-section class="text-center">
+          <img :src="qrImageUrl" alt="Workshop QR" class="qr-image" />
+          <div class="text-caption q-mt-sm">Scan führt direkt zur Workshopseite.</div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="editDialog">
+      <q-card class="glass-card" style="width: min(760px, 95vw)">
+        <q-card-section><div class="text-h6">Workshop bearbeiten</div></q-card-section>
+        <q-card-section class="q-gutter-md">
+          <q-input v-model="editForm.titel" outlined dense label="Titel" />
+          <q-input v-model="editForm.beschreibung" type="textarea" autogrow outlined dense label="Beschreibung" />
+
+          <div class="row q-col-gutter-sm">
+            <div class="col-12 col-md-6"><q-input v-model.number="editForm.kapazitaet" type="number" outlined dense label="Kapazität" /></div>
+            <div class="col-12 col-md-6"><q-input v-model.number="editForm.kosten" type="number" outlined dense label="Kosten" /></div>
+          </div>
+
+          <div class="row q-col-gutter-sm">
+            <div class="col-12 col-md-6"><q-input v-model="editForm.raum" outlined dense label="Raum" /></div>
+            <div class="col-12 col-md-6"><q-input v-model="editForm.adresse" outlined dense label="Adresse" /></div>
+          </div>
+
+          <div class="row q-col-gutter-sm">
+            <div class="col-12 col-md-6"><q-input v-model="editForm.anfang_datum_zeit" type="datetime-local" outlined dense label="Beginn" /></div>
+            <div class="col-12 col-md-6"><q-input v-model="editForm.ende_datum_zeit" type="datetime-local" outlined dense label="Ende" /></div>
+          </div>
+
+          <q-toggle v-model="editForm.public" label="Öffentlich" color="primary" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat no-caps label="Abbrechen" v-close-popup />
+          <q-btn color="primary" :loading="saveLoading" label="Speichern" no-caps unelevated @click="saveEdit" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <style scoped>
-.detail-page {
-  min-height: calc(100vh - 98px);
-  transition: background 0.3s ease;
-}
-.bg-light-page {
-  background: linear-gradient(180deg, #f5f7fa 0%, #ffffff 100%);
-}
-.bg-dark-page {
-  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.2), rgba(11, 20, 33, 0.96));
-}
-.detail-wrapper {
-  max-width: 880px;
-  margin: 0 auto;
-  width: 100%;
-}
-.detail-card {
-  border-radius: 24px;
-  padding: 32px;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
-}
-.detail-card--light {
-  background-color: #ffffff;
-  box-shadow: 0 24px 55px rgba(25, 118, 210, 0.1);
-}
-.detail-card--dark {
-  background: rgba(15, 23, 42, 0.92);
-  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
-}
-.card-header {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.eyebrow {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.info-grid {
+.detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-  margin: 8px 0 12px;
+  gap: 14px;
+  grid-template-columns: 1.1fr 1fr;
 }
-.info-item {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
+
+.qr-image {
+  width: 220px;
+  height: 220px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
-.label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: rgba(28, 32, 38, 0.6);
+
+.status-ok {
+  border-color: rgba(64, 186, 111, 0.45);
+  color: #1f7d45;
 }
-.value {
-  font-size: 0.95rem;
-  font-weight: 500;
+
+.status-full {
+  border-color: rgba(235, 87, 87, 0.45);
+  color: #c84545;
 }
-.detail-card--dark .label {
-  color: rgba(255, 255, 255, 0.6);
+
+body.body--dark .status-ok {
+  color: #78df9f;
 }
-.detail-card--dark .value {
-  color: rgba(255, 255, 255, 0.92);
+
+body.body--dark .status-full {
+  color: #ff9a9a;
 }
-.section-block + .section-block {
-  margin-top: 20px;
-}
-.chip-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.participant-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 6px;
-}
-.participant-list li {
-  display: flex;
-  align-items: center;
-  font-size: 0.95rem;
-}
-.participants-header {
-  gap: 10px;
-}
-.action-bar {
-  margin-top: 24px;
-}
-@media (max-width: 768px) {
-  .detail-card {
-    padding: 24px;
-  }
-  .info-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+@media (max-width: 960px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
+

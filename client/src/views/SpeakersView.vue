@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useQuasar } from 'quasar';
 
 import { useDbStore } from '../stores/dbStore';
@@ -118,9 +118,6 @@ function einladen(person) {
   });
 }
 
-onMounted(async () => {
-  await dbStore.refreshAll();
-});
 </script>
 
 <template>

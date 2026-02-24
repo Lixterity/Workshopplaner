@@ -54,8 +54,14 @@ const routes = [
   },
   {
     path: '/workshops/:workshopId',
-    alias: '/events/:eventId/workshops/:workshopId',
     name: 'workshop-detail',
+    component: () => import('../views/WorkshopDetailView.vue'),
+    props: true,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/veranstaltungen/:eventId/workshops/:workshopId',
+    name: 'event-workshop-detail',
     component: () => import('../views/WorkshopDetailView.vue'),
     props: true,
     meta: { requiresAuth: true },

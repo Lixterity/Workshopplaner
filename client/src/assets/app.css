@@ -136,6 +136,10 @@ body.body--dark .q-btn.bg-positive {
   color: #201205 !important;
 }
 
+.notify-compact {
+  max-width: 420px;
+}
+
 @media (max-width: 768px) {
   .page-shell {
     padding: 14px;

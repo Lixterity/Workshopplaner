@@ -1,9 +1,11 @@
 ﻿<script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 
 import { useDbStore } from '../stores/dbStore';
 
+const router = useRouter();
 const dbStore = useDbStore();
 const $q = useQuasar();
 
@@ -21,10 +23,17 @@ const istEventManager = computed(() => dbStore.istOrganisator || dbStore.istAdmi
 
 const gefilterteEvents = computed(() => {
   const text = suche.value.trim().toLowerCase();
-  return dbStore.eventMitWorkshops.filter((event) => {
-    if (!text) return true;
-    return event.name.toLowerCase().includes(text);
-  });
+  return dbStore.eventMitWorkshops
+    .filter((event) => {
+      if (!text) return true;
+      return event.name.toLowerCase().includes(text);
+    })
+    .sort((a, b) => {
+      const fa = a.friend_count ?? 0;
+      const fb = b.friend_count ?? 0;
+      if (fb !== fa) return fb - fa;
+      return a.name.localeCompare(b.name, 'de');
+    });
 });
 
 function isOwner(event) {
@@ -92,9 +101,6 @@ async function loescheEvent(event) {
   });
 }
 
-onMounted(async () => {
-  await dbStore.refreshAll();
-});
 </script>
 
 <template>
@@ -119,8 +125,8 @@ onMounted(async () => {
       </div>
 
       <div class="event-grid">
-        <q-card v-for="event in gefilterteEvents" :key="event.id" class="glass-card event-card">
-          <q-card-section class="event-card__section">
+        <q-card v-for="event in gefilterteEvents" :key="event.id" class="glass-card event-card flex column cursor-pointer" @click="router.push(`/veranstaltungen/${event.id}/workshops`)">
+          <q-card-section class="event-card__section col-grow">
             <div class="text-h6 text-weight-bold">{{ event.name }}</div>
 
             <div class="event-stats q-mt-md">
@@ -130,14 +136,30 @@ onMounted(async () => {
               </div>
               <div class="event-stat-line">
                 <span class="text-grey-7">Freunde dabei</span>
-                <q-badge
-                  rounded
-                  :color="(event.friend_count ?? 0) > 0 ? 'primary' : 'grey-7'"
-                  text-color="white"
-                  class="q-px-sm q-py-xs"
-                >
-                  {{ event.friend_count ?? 0 }}
-                </q-badge>
+                <div class="friend-avatars" v-if="dbStore.friendsInEvent(event.id).length">
+                  <q-avatar
+                    v-for="friend in dbStore.friendsInEvent(event.id).slice(0, 5)"
+                    :key="friend.id"
+                    size="26px"
+                    color="primary"
+                    text-color="white"
+                    class="friend-avatar"
+                  >
+                    {{ (friend.vorname || '?')[0] }}
+                    <q-tooltip :offset="[0, 4]">{{ `${friend.vorname || ''} ${friend.nachname || ''}`.trim() || friend.email }}</q-tooltip>
+                  </q-avatar>
+                  <q-avatar
+                    v-if="dbStore.friendsInEvent(event.id).length > 5"
+                    size="26px"
+                    color="grey-6"
+                    text-color="white"
+                    class="friend-avatar"
+                  >
+                    +{{ dbStore.friendsInEvent(event.id).length - 5 }}
+                    <q-tooltip :offset="[0, 4]">{{ dbStore.friendsInEvent(event.id).slice(5).map(f => `${f.vorname || ''} ${f.nachname || ''}`.trim()).join(', ') }}</q-tooltip>
+                  </q-avatar>
+                </div>
+                <span v-else class="text-grey-5">0</span>
               </div>
             </div>
           </q-card-section>
@@ -145,10 +167,10 @@ onMounted(async () => {
           <q-separator class="event-separator" />
 
           <q-card-actions align="between" class="q-px-md q-pb-md">
-            <q-btn :to="`/veranstaltungen/${event.id}/workshops`" flat color="primary" icon="list" label="Workshops" no-caps />
+            <q-btn :to="`/veranstaltungen/${event.id}/workshops`" flat color="primary" icon="list" label="Workshops" no-caps @click.stop />
             <div v-if="istEventManager" class="row q-gutter-xs">
-              <q-btn dense flat round icon="edit" color="primary" @click="oeffneEditDialog(event)" />
-              <q-btn dense flat round icon="delete" color="negative" @click="loescheEvent(event)" />
+              <q-btn dense flat round icon="edit" color="primary" @click.stop="oeffneEditDialog(event)" />
+              <q-btn dense flat round icon="delete" color="negative" @click.stop="loescheEvent(event)" />
             </div>
           </q-card-actions>
         </q-card>
@@ -208,5 +230,20 @@ onMounted(async () => {
 
 .event-separator {
   opacity: 0.65;
+}
+
+.friend-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.friend-avatar {
+  margin-left: -6px;
+  outline: 2px solid white;
+  cursor: pointer;
+}
+
+.friend-avatar:first-child {
+  margin-left: 0;
 }
 </style>

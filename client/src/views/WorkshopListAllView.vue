@@ -1,9 +1,11 @@
 ﻿<script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 
 import { useDbStore } from '../stores/dbStore';
 
+const router = useRouter();
 const dbStore = useDbStore();
 const $q = useQuasar();
 
@@ -19,26 +21,33 @@ const eventOptionen = computed(() => [
 const workshopListe = computed(() => {
   const text = suchtext.value.trim().toLowerCase();
 
-  return dbStore.workshops.filter((workshop) => {
-    if (eventFilter.value && String(workshop.event_id) !== String(eventFilter.value)) {
-      return false;
-    }
+  return dbStore.workshops
+    .filter((workshop) => {
+      if (eventFilter.value && String(workshop.event_id) !== String(eventFilter.value)) {
+        return false;
+      }
 
-    const freiePlaetze = (workshop.kapazitaet ?? 999999) - dbStore.workshopBelegung(workshop.id);
-    if (nurMitPlaetzen.value && freiePlaetze <= 0) {
-      return false;
-    }
+      const freiePlaetze = (workshop.kapazitaet ?? 999999) - dbStore.workshopBelegung(workshop.id);
+      if (nurMitPlaetzen.value && freiePlaetze <= 0) {
+        return false;
+      }
 
-    if (!text) {
-      return true;
-    }
+      if (!text) {
+        return true;
+      }
 
-    return (
-      (workshop.titel || '').toLowerCase().includes(text) ||
-      (workshop.beschreibung || '').toLowerCase().includes(text) ||
-      (workshop.raum || '').toLowerCase().includes(text)
-    );
-  });
+      return (
+        (workshop.titel || '').toLowerCase().includes(text) ||
+        (workshop.beschreibung || '').toLowerCase().includes(text) ||
+        (workshop.raum || '').toLowerCase().includes(text)
+      );
+    })
+    .sort((a, b) => {
+      const fa = dbStore.friendCountForWorkshop(a.id);
+      const fb = dbStore.friendCountForWorkshop(b.id);
+      if (fb !== fa) return fb - fa;
+      return (a.titel || '').localeCompare(b.titel || '', 'de');
+    });
 });
 
 function eventName(eventId) {
@@ -76,7 +85,7 @@ async function toggleAnmeldung(workshop) {
     : await dbStore.workshopAnmelden(workshop.id);
 
   if (result.error) {
-    $q.notify({ type: 'negative', message: result.error.message });
+    $q.notify({ type: 'negative', message: result.error.message, multiLine: true, classes: 'notify-compact' });
     return;
   }
 
@@ -86,9 +95,6 @@ async function toggleAnmeldung(workshop) {
   });
 }
 
-onMounted(async () => {
-  await dbStore.refreshAll();
-});
 </script>
 
 <template>
@@ -114,8 +120,8 @@ onMounted(async () => {
       </div>
 
       <div class="workshop-grid">
-        <q-card v-for="workshop in workshopListe" :key="workshop.id" class="glass-card workshop-card">
-          <q-card-section class="workshop-card__section">
+        <q-card v-for="workshop in workshopListe" :key="workshop.id" class="glass-card workshop-card flex column cursor-pointer" @click="router.push(`/workshops/${workshop.id}`)">
+          <q-card-section class="workshop-card__section col-grow">
             <div class="text-overline workshop-overline">{{ eventName(workshop.event_id) }}</div>
             <div class="text-h6 text-weight-bold">{{ workshop.titel }}</div>
             <div class="text-caption text-grey-7 q-mt-xs">{{ formatRange(workshop) }}</div>
@@ -136,6 +142,30 @@ onMounted(async () => {
               </div>
             </div>
 
+            <div class="friend-avatars q-mt-xs" v-if="dbStore.friendsInWorkshop(workshop.id).length">
+              <q-avatar
+                v-for="friend in dbStore.friendsInWorkshop(workshop.id).slice(0, 5)"
+                :key="friend.id"
+                size="28px"
+                color="primary"
+                text-color="white"
+                class="friend-avatar"
+              >
+                {{ (friend.vorname || '?')[0] }}
+                <q-tooltip :offset="[0, 4]">{{ `${friend.vorname || ''} ${friend.nachname || ''}`.trim() || friend.email }}</q-tooltip>
+              </q-avatar>
+              <q-avatar
+                v-if="dbStore.friendsInWorkshop(workshop.id).length > 5"
+                size="28px"
+                color="grey-6"
+                text-color="white"
+                class="friend-avatar"
+              >
+                +{{ dbStore.friendsInWorkshop(workshop.id).length - 5 }}
+                <q-tooltip :offset="[0, 4]">{{ dbStore.friendsInWorkshop(workshop.id).slice(5).map(f => `${f.vorname || ''} ${f.nachname || ''}`.trim()).join(', ') }}</q-tooltip>
+              </q-avatar>
+            </div>
+
             <div class="q-mt-sm" v-if="freiePlaetze(workshop) !== null">
               <q-badge
                 rounded
@@ -150,14 +180,14 @@ onMounted(async () => {
 
           <q-separator />
           <q-card-actions align="between">
-            <q-btn :to="`/workshops/${workshop.id}`" flat color="primary" icon="open_in_new" label="Details" no-caps />
+            <q-btn :to="`/workshops/${workshop.id}`" flat color="primary" icon="open_in_new" label="Details" no-caps @click.stop />
             <q-btn
               :color="dbStore.isRegisteredForWorkshop(workshop.id) ? 'negative' : 'primary'"
               :icon="dbStore.isRegisteredForWorkshop(workshop.id) ? 'event_busy' : 'event_available'"
               :label="dbStore.isRegisteredForWorkshop(workshop.id) ? 'Abmelden' : 'Anmelden'"
               no-caps
               unelevated
-              @click="toggleAnmeldung(workshop)"
+              @click.stop="toggleAnmeldung(workshop)"
             />
           </q-card-actions>
         </q-card>
@@ -186,6 +216,13 @@ onMounted(async () => {
 .workshop-overline {
   color: var(--q-primary);
   letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-card .text-h6 {
+  word-break: break-word;
 }
 
 .workshop-description {
@@ -203,6 +240,21 @@ onMounted(async () => {
   gap: 8px;
   font-size: 0.92rem;
   font-weight: 500;
+}
+
+.friend-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.friend-avatar {
+  margin-left: -6px;
+  outline: 2px solid white;
+  cursor: pointer;
+}
+
+.friend-avatar:first-child {
+  margin-left: 0;
 }
 </style>
 

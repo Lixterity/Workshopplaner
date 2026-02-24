@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 
 import { useDbStore } from '../stores/dbStore';
 
@@ -13,9 +13,6 @@ const cards = computed(() =>
   })),
 );
 
-onMounted(async () => {
-  await dbStore.refreshAll();
-});
 </script>
 
 <template>

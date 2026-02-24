@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useQuasar } from 'quasar';
 
 import { useDbStore } from '../stores/dbStore';
@@ -113,9 +113,6 @@ async function loeschen(row) {
   );
 }
 
-onMounted(async () => {
-  await dbStore.refreshAll();
-});
 </script>
 
 <template>

@@ -1,9 +1,9 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 
-import { supabase, useDbStore } from './stores/dbStore';
+import { useDbStore } from './stores/dbStore';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -11,7 +11,7 @@ const router = useRouter();
 const dbStore = useDbStore();
 
 const drawerOpen = ref(false);
-let authSubscription;
+
 
 const navItems = computed(() => {
   const base = [
@@ -65,28 +65,8 @@ function gotoProfile() {
   router.push('/profil');
 }
 
-onMounted(async () => {
-  await dbStore.initStore();
-
-  const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
-    dbStore.user = session?.user ?? null;
-    if (session?.user) {
-      await dbStore.fetchProfile();
-      await dbStore.fetchTeilnehmer();
-      await dbStore.fetchEvents();
-      await dbStore.fetchWorkshops();
-    } else {
-      dbStore.profile = null;
-      dbStore.rolle = dbStore.ROLLEN.TEILNEHMER;
-    }
-  });
-
-  authSubscription = data.subscription;
-});
-
-onUnmounted(() => {
-  authSubscription?.unsubscribe();
-});
+// Auth state listener is now managed inside authStore (registered during store creation).
+// No need for onAuthStateChange here — the router guard + initStore handle everything.
 </script>
 
 <template>
@@ -99,7 +79,7 @@ onUnmounted(() => {
           <img src="/WP_Icon.png" alt="Logo" class="brand-logo" />
           <div class="brand-text">
             <div class="brand-title">Workshopplaner 2.0</div>
-            <div class="brand-subtitle">HTL Wien 16</div>
+            <div class="brand-subtitle">HTL Wien West</div>
           </div>
         </q-btn>
 

@@ -79,8 +79,7 @@ function sendeAnfrage() {
   $q.notify({ type: 'positive', message: 'Freundschaftsanfrage gesendet.' });
 }
 
-onMounted(async () => {
-  await dbStore.refreshAll();
+onMounted(() => {
   syncForm();
 });
 
@@ -125,7 +124,6 @@ watch(profil, () => {
           <div v-if="isOwnProfile" class="q-gutter-md">
             <q-input v-model="form.vorname" outlined dense label="Vorname" />
             <q-input v-model="form.nachname" outlined dense label="Nachname" />
-            <q-input v-model.number="form.erforderliche_stunden" outlined dense type="number" min="0" label="Erforderliche Stunden" />
 
             <q-btn color="primary" :loading="saving" label="Speichern" no-caps unelevated @click="saveProfil" />
           </div>

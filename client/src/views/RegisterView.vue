@@ -36,11 +36,11 @@ async function register() {
   }
 
   loading.value = true;
-  const fullName = `${vorname.value} ${nachname.value}`.trim();
   const { error } = await dbStore.handleUserRegister(
     email.value,
     password.value,
-    fullName,
+    vorname.value.trim(),
+    nachname.value.trim(),
     dbStore.ROLLEN.TEILNEHMER,
   );
   loading.value = false;

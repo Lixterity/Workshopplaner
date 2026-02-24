@@ -25,14 +25,11 @@ const cards = computed(() =>
 
       <div class="event-grid">
         <q-card v-for="event in cards" :key="event.id" class="glass-card event-card q-pa-md">
-          <div class="row items-center justify-between">
-            <div class="text-h6 text-weight-bold">{{ event.name }}</div>
-            <q-chip dense icon="group" color="primary" text-color="white">{{ event.friendCount }} Freunde</q-chip>
-          </div>
-
+          <div class="text-h6 text-weight-bold">{{ event.name }}</div>
+          <q-chip dense icon="group" color="primary" text-color="white" class="q-mt-sm">{{ event.friendCount }} Freunde</q-chip>
           <div class="text-caption text-grey-7 q-mt-xs">{{ event.workshopCount }} gebuchte Workshops</div>
 
-          <div class="q-mt-md">
+          <div class="event-card__action">
             <q-btn :to="`/veranstaltungen/${event.id}/workshops`" color="primary" icon="list" label="Workshops im Event" no-caps unelevated />
           </div>
         </q-card>
@@ -52,5 +49,12 @@ const cards = computed(() =>
 
 .event-card {
   border-radius: 18px;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.event-card__action {
+  margin-top: auto;
+  padding-top: 16px;
 }
 </style>

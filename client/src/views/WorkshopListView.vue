@@ -47,18 +47,27 @@ const workshops = computed(() =>
     }),
 );
 
-const gefilterteWorkshops = computed(() => {
+function filterByText(liste) {
   const text = suchtext.value.trim().toLowerCase();
-  if (!text) return workshops.value;
-
-  return workshops.value.filter((workshop) => {
+  if (!text) return liste;
+  return liste.filter((workshop) => {
     return (
       (workshop.titel || '').toLowerCase().includes(text) ||
       (workshop.beschreibung || '').toLowerCase().includes(text) ||
       (workshop.raum || '').toLowerCase().includes(text)
     );
   });
-});
+}
+
+const istManager = computed(() => dbStore.istOrganisator || dbStore.istAdmin);
+
+const meineWorkshops = computed(() =>
+  filterByText(workshops.value.filter((w) => w.created_by === dbStore.userId)),
+);
+
+const andereWorkshops = computed(() =>
+  filterByText(workshops.value.filter((w) => w.created_by !== dbStore.userId)),
+);
 
 const darfVerwalten = computed(() => {
   if (!currentEvent.value) return false;
@@ -99,10 +108,6 @@ function initWorkshopForm(workshop = null) {
 }
 
 function openCreate() {
-  if (!darfVerwalten.value && !dbStore.istAdmin) {
-    $q.notify({ type: 'warning', message: 'Du kannst nur eigene Event-Workshops verwalten.' });
-    return;
-  }
   initWorkshopForm();
   workshopDialog.value = true;
 }
@@ -222,8 +227,93 @@ async function toggleAnmeldung(workshop) {
         </div>
       </div>
 
+      <template v-if="istManager && meineWorkshops.length">
+        <div class="text-subtitle1 text-weight-bold q-mb-sm">Meine Workshops</div>
+        <div class="workshop-grid q-mb-lg">
+          <q-card v-for="workshop in meineWorkshops" :key="workshop.id" class="glass-card workshop-card flex column cursor-pointer" @click="router.push(`/workshops/${workshop.id}`)">
+            <q-card-section class="workshop-card__section col-grow">
+              <div class="text-overline workshop-overline">{{ currentEvent?.name || 'Event' }}</div>
+              <div class="text-h6 text-weight-bold">{{ workshop.titel }}</div>
+              <div class="text-caption text-grey-7 q-mt-xs">{{ toDateRange(workshop) }}</div>
+              <div class="text-body2 q-mt-sm workshop-description">{{ workshop.beschreibung || 'Keine Beschreibung vorhanden.' }}</div>
+
+              <div class="workshop-meta q-mt-md">
+                <div class="workshop-meta__item">
+                  <q-icon name="meeting_room" size="18px" color="primary" />
+                  <span>{{ workshop.raum || 'Raum offen' }}</span>
+                </div>
+                <div class="workshop-meta__item">
+                  <q-icon name="groups" size="18px" color="primary" />
+                  <span>{{ dbStore.workshopBelegung(workshop.id) }} / {{ workshop.kapazitaet ?? '∞' }} Plätze</span>
+                </div>
+                <div class="workshop-meta__item">
+                  <q-icon name="group" size="18px" color="primary" />
+                  <span>{{ dbStore.friendCountForWorkshop(workshop.id) }} Freunde</span>
+                </div>
+              </div>
+
+              <div class="friend-avatars q-mt-xs" v-if="dbStore.friendsInWorkshop(workshop.id).length">
+                <q-avatar
+                  v-for="friend in dbStore.friendsInWorkshop(workshop.id).slice(0, 5)"
+                  :key="friend.id"
+                  size="28px"
+                  color="primary"
+                  text-color="white"
+                  class="friend-avatar"
+                >
+                  {{ (friend.vorname || '?')[0] }}
+                  <q-tooltip :offset="[0, 4]">{{ `${friend.vorname || ''} ${friend.nachname || ''}`.trim() || friend.email }}</q-tooltip>
+                </q-avatar>
+                <q-avatar
+                  v-if="dbStore.friendsInWorkshop(workshop.id).length > 5"
+                  size="28px"
+                  color="grey-6"
+                  text-color="white"
+                  class="friend-avatar"
+                >
+                  +{{ dbStore.friendsInWorkshop(workshop.id).length - 5 }}
+                  <q-tooltip :offset="[0, 4]">{{ dbStore.friendsInWorkshop(workshop.id).slice(5).map(f => `${f.vorname || ''} ${f.nachname || ''}`.trim()).join(', ') }}</q-tooltip>
+                </q-avatar>
+              </div>
+
+              <div class="q-mt-sm" v-if="freiePlaetze(workshop) !== null">
+                <q-badge
+                  rounded
+                  :color="freiePlaetze(workshop) > 0 ? 'positive' : 'negative'"
+                  text-color="white"
+                  class="q-px-sm q-py-xs"
+                >
+                  {{ freiePlaetze(workshop) > 0 ? `${freiePlaetze(workshop)} Plätze frei` : 'Ausgebucht' }}
+                </q-badge>
+              </div>
+            </q-card-section>
+
+            <q-separator />
+
+            <q-card-actions align="between">
+              <q-btn :to="`/workshops/${workshop.id}`" flat color="primary" icon="open_in_new" label="Details" no-caps @click.stop />
+              <div class="row q-gutter-xs items-center">
+                <q-btn
+                  :color="dbStore.isRegisteredForWorkshop(workshop.id) ? 'negative' : 'primary'"
+                  :icon="dbStore.isRegisteredForWorkshop(workshop.id) ? 'event_busy' : 'event_available'"
+                  :label="dbStore.isRegisteredForWorkshop(workshop.id) ? 'Abmelden' : 'Anmelden'"
+                  no-caps
+                  unelevated
+                  @click.stop="toggleAnmeldung(workshop)"
+                />
+                <q-btn dense flat round icon="edit" color="primary" @click.stop="openEdit(workshop)" />
+                <q-btn dense flat round icon="delete" color="negative" @click.stop="deleteWorkshop(workshop)" />
+              </div>
+            </q-card-actions>
+          </q-card>
+        </div>
+
+        <q-separator class="q-mb-lg" />
+        <div class="text-subtitle1 text-weight-bold q-mb-sm">Andere Workshops</div>
+      </template>
+
       <div class="workshop-grid">
-        <q-card v-for="workshop in gefilterteWorkshops" :key="workshop.id" class="glass-card workshop-card flex column cursor-pointer" @click="router.push(`/workshops/${workshop.id}`)">
+        <q-card v-for="workshop in andereWorkshops" :key="workshop.id" class="glass-card workshop-card flex column cursor-pointer" @click="router.push(`/workshops/${workshop.id}`)">
           <q-card-section class="workshop-card__section col-grow">
             <div class="text-overline workshop-overline">{{ currentEvent?.name || 'Event' }}</div>
             <div class="text-h6 text-weight-bold">{{ workshop.titel }}</div>
@@ -285,25 +375,19 @@ async function toggleAnmeldung(workshop) {
 
           <q-card-actions align="between">
             <q-btn :to="`/workshops/${workshop.id}`" flat color="primary" icon="open_in_new" label="Details" no-caps @click.stop />
-            <div class="row q-gutter-xs items-center">
-              <q-btn
-                :color="dbStore.isRegisteredForWorkshop(workshop.id) ? 'negative' : 'primary'"
-                :icon="dbStore.isRegisteredForWorkshop(workshop.id) ? 'event_busy' : 'event_available'"
-                :label="dbStore.isRegisteredForWorkshop(workshop.id) ? 'Abmelden' : 'Anmelden'"
-                no-caps
-                unelevated
-                @click.stop="toggleAnmeldung(workshop)"
-              />
-              <template v-if="dbStore.istOrganisator || dbStore.istAdmin">
-                <q-btn dense flat round icon="edit" color="primary" @click.stop="openEdit(workshop)" />
-                <q-btn dense flat round icon="delete" color="negative" @click.stop="deleteWorkshop(workshop)" />
-              </template>
-            </div>
+            <q-btn
+              :color="dbStore.isRegisteredForWorkshop(workshop.id) ? 'negative' : 'primary'"
+              :icon="dbStore.isRegisteredForWorkshop(workshop.id) ? 'event_busy' : 'event_available'"
+              :label="dbStore.isRegisteredForWorkshop(workshop.id) ? 'Abmelden' : 'Anmelden'"
+              no-caps
+              unelevated
+              @click.stop="toggleAnmeldung(workshop)"
+            />
           </q-card-actions>
         </q-card>
       </div>
 
-      <q-banner v-if="!gefilterteWorkshops.length" class="glass-card q-pa-md q-mt-md">
+      <q-banner v-if="!meineWorkshops.length && !andereWorkshops.length" class="glass-card q-pa-md q-mt-md">
         Keine Workshops für die aktuelle Suche gefunden.
       </q-banner>
     </div>

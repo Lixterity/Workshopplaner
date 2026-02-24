@@ -207,6 +207,7 @@ export const useDbStore = defineStore('dbStore', () => {
     isRegisteredForWorkshop: social.isRegisteredForWorkshop,
     getWorkshopAnmeldungen: social.getWorkshopAnmeldungen,
     workshopAnmelden: social.workshopAnmelden,
+    einladeZuWorkshop: social.einladeZuWorkshop,
     workshopAbmelden: social.workshopAbmelden,
     sendeFreundschaftsanfrage: social.sendeFreundschaftsanfrage,
     freundschaftAnnehmen: social.freundschaftAnnehmen,

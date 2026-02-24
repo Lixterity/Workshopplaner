@@ -148,6 +148,33 @@ export const useSocialStore = defineStore('socialStore', () => {
     return { error: null, data: row };
   }
 
+  async function einladeZuWorkshop(authUserId, workshopId) {
+    const workshop = data.getWorkshopById(workshopId);
+    if (!workshop) return { error: new Error('Workshop nicht gefunden.') };
+
+    const bereitsAngemeldet = registrierungen.value.some(
+      (r) => r.auth_user_id === authUserId && String(r.workshop_id) === String(workshopId),
+    );
+    if (bereitsAngemeldet) {
+      return { error: new Error('Diese Person ist bereits angemeldet.') };
+    }
+
+    if (workshop.kapazitaet && workshopBelegung(workshop.id) >= workshop.kapazitaet) {
+      return { error: new Error('Dieser Workshop ist bereits voll.') };
+    }
+
+    const { data: row, error } = await supabase
+      .from('workshop_anmeldung')
+      .insert({ auth_user_id: authUserId, workshop_id: workshop.id })
+      .select('*')
+      .maybeSingle();
+
+    if (error) return { error };
+
+    registrierungen.value = [...registrierungen.value, row];
+    return { error: null, data: row };
+  }
+
   async function workshopAbmelden(workshopId) {
     if (!auth.istAngemeldet) {
       return { error: new Error('Bitte zuerst anmelden.') };
@@ -384,6 +411,7 @@ export const useSocialStore = defineStore('socialStore', () => {
     getWorkshopAnmeldungen,
     findeZeitkollision,
     workshopAnmelden,
+    einladeZuWorkshop,
     workshopAbmelden,
     offeneFreundschaftsanfragen,
     gesendeteFreundschaftsanfragen,

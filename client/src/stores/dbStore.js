@@ -29,6 +29,11 @@ export const useDbStore = defineStore('dbStore', () => {
   const workshops = computed(() => data.workshops);
   const teilnehmer = computed(() => data.teilnehmer);
   const rollen = computed(() => data.rollen);
+  const beliebtesteWorkshops = computed(() => data.beliebtesteWorkshops);
+  const anmeldungenProTag = computed(() => data.anmeldungenProTag);
+  const eventStatistik = computed(() => data.eventStatistik);
+  const tagStatistik = computed(() => data.tagStatistik);
+  const statistikLoading = computed(() => data.statistikLoading);
   const loading = computed(() => data.loading);
   const initialized = computed(() => data.initialized);
   const organisatoren = computed(() => data.organisatoren);
@@ -144,6 +149,11 @@ export const useDbStore = defineStore('dbStore', () => {
     workshops,
     teilnehmer,
     rollen,
+    beliebtesteWorkshops,
+    anmeldungenProTag,
+    eventStatistik,
+    tagStatistik,
+    statistikLoading,
     loading,
     initialized,
     organisatoren,
@@ -174,6 +184,7 @@ export const useDbStore = defineStore('dbStore', () => {
     fetchTeilnehmer: data.fetchTeilnehmer,
     fetchEvents: data.fetchEvents,
     fetchWorkshops: data.fetchWorkshops,
+    fetchStatistiken: data.fetchStatistiken,
     fetchRegistrierungen: social.fetchRegistrierungen,
     fetchFreundschaften: social.fetchFreundschaften,
 

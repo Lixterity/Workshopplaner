@@ -22,6 +22,11 @@ export const useDataStore = defineStore('dataStore', () => {
   const workshops = ref([]);
   const teilnehmer = ref([]);
   const rollen = ref([]);
+  const beliebtesteWorkshops = ref([]);
+  const anmeldungenProTag = ref([]);
+  const eventStatistik = ref([]);
+  const tagStatistik = ref([]);
+  const statistikLoading = ref(false);
   const loading = ref(false);
   const initialized = ref(false);
 
@@ -85,6 +90,50 @@ export const useDataStore = defineStore('dataStore', () => {
       workshops.value = data;
     }
     return { data, error };
+  }
+
+  async function fetchStatistiken() {
+    statistikLoading.value = true;
+    try {
+      const [
+        beliebtesteResult,
+        anmeldungenResult,
+        eventsResult,
+        tagsResult,
+      ] = await Promise.all([
+        supabase.from('v_beliebteste_workshops').select('*').order('anzahl_anmeldungen', { ascending: false }),
+        supabase.from('v_anmeldungen_pro_tag').select('*').order('datum', { ascending: true }),
+        supabase.from('v_event_statistik').select('*').order('anzahl_anmeldungen', { ascending: false }),
+        supabase.from('v_tag_statistik').select('*').order('anzahl_workshops', { ascending: false }),
+      ]);
+
+      if (!beliebtesteResult.error && Array.isArray(beliebtesteResult.data)) {
+        beliebtesteWorkshops.value = beliebtesteResult.data;
+      }
+      if (!anmeldungenResult.error && Array.isArray(anmeldungenResult.data)) {
+        anmeldungenProTag.value = anmeldungenResult.data;
+      }
+      if (!eventsResult.error && Array.isArray(eventsResult.data)) {
+        eventStatistik.value = eventsResult.data;
+      }
+      if (!tagsResult.error && Array.isArray(tagsResult.data)) {
+        tagStatistik.value = tagsResult.data;
+      }
+
+      const error =
+        beliebtesteResult.error || anmeldungenResult.error || eventsResult.error || tagsResult.error || null;
+      return {
+        data: {
+          beliebtesteWorkshops: beliebtesteResult.data,
+          anmeldungenProTag: anmeldungenResult.data,
+          eventStatistik: eventsResult.data,
+          tagStatistik: tagsResult.data,
+        },
+        error,
+      };
+    } finally {
+      statistikLoading.value = false;
+    }
   }
 
   function getWorkshopById(workshopId) {
@@ -298,6 +347,11 @@ export const useDataStore = defineStore('dataStore', () => {
     workshops,
     teilnehmer,
     rollen,
+    beliebtesteWorkshops,
+    anmeldungenProTag,
+    eventStatistik,
+    tagStatistik,
+    statistikLoading,
     loading,
     initialized,
     organisatoren,
@@ -306,6 +360,7 @@ export const useDataStore = defineStore('dataStore', () => {
     fetchTeilnehmer,
     fetchEvents,
     fetchWorkshops,
+    fetchStatistiken,
     getWorkshopById,
     getEventById,
     canEditWorkshop,

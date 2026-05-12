@@ -93,6 +93,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/statistik',
+    name: 'statistik',
+    component: () => import('../views/StatisticsView.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ORGANISATOR', 'ADMINISTRATOR'] },
+  },
+  {
     path: '/orte',
     redirect: '/workshops',
   },

@@ -25,6 +25,7 @@ const navItems = computed(() => {
 
   if (dbStore.rolle === dbStore.ROLLEN.ORGANISATOR || dbStore.rolle === dbStore.ROLLEN.ADMINISTRATOR) {
     base.push({ to: '/vortragende', icon: 'dashboard', label: 'Dashboard', auth: true });
+    base.push({ to: '/statistik', icon: 'bar_chart', label: 'Statistik', auth: true });
   }
 
   if (dbStore.rolle === dbStore.ROLLEN.ADMINISTRATOR) {
